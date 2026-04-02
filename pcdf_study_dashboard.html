@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Estudos — Delegado PCDF</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f0;color:#1a1a1a;padding:1rem}
+.wrap{max-width:900px;margin:0 auto;padding:1rem 0}
+.hdr{margin-bottom:1.25rem}
+.title{font-size:17px;font-weight:500;color:#1a1a1a}
+.subtitle{font-size:12px;color:#666;margin-top:3px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+.stat{background:#e8e8e2;border-radius:8px;padding:12px}
+.sn{font-size:21px;font-weight:500;color:#1a1a1a}
+.sl{font-size:11px;color:#666;margin-top:2px}
+.sn.g{color:#1a7a4a}
+.sn.a{color:#b87400}
+.sn.p{color:#666}
+.global-bar{height:6px;background:#d0d0c8;border-radius:3px;margin-bottom:1.25rem;overflow:hidden}
+.global-fill{height:100%;border-radius:3px;background:#1a7a4a;transition:width .4s}
+.filters{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.fb{padding:5px 12px;border:0.5px solid #999;border-radius:20px;font-size:12px;cursor:pointer;background:transparent;color:#666;font-family:inherit;transition:all .15s}
+.fb:hover{border-color:#333}
+.fb.on{background:#e8e8e2;color:#1a1a1a;border-color:#333;font-weight:500}
+.card{border:0.5px solid #d0d0c8;border-radius:12px;margin-bottom:8px;overflow:hidden;background:#fff}
+.sh{display:flex;align-items:center;padding:12px 16px;cursor:pointer;gap:10px;user-select:none;transition:background .1s}
+.sh:hover{background:#f5f5f0}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sname{flex:1;font-size:13.5px;font-weight:500;color:#1a1a1a}
+.spct{font-size:11.5px;color:#666;margin-right:4px}
+.chev{font-size:10px;color:#999;transition:transform .2s}
+.chev.open{transform:rotate(90deg)}
+.pb{height:3px;background:#e0e0d8;margin:0 16px 0}
+.pf{height:100%;border-radius:2px;transition:width .35s}
+.topics-wrap{display:none}
+.topics-wrap.open{display:block}
+.tr{display:flex;align-items:flex-start;gap:8px;padding:7px 16px;border-top:0.5px solid #e8e8e2;transition:background .1s}
+.tr:hover{background:#f8f8f4}
+.tr.done .tl{text-decoration:line-through;color:#aaa}
+.tl{flex:1;font-size:12.5px;color:#1a1a1a;line-height:1.45;padding-top:1px}
+.tl.lei{font-style:italic;color:#666}
+.lei-badge{font-size:10px;background:#e8e8e2;border:0.5px solid #d0d0c8;border-radius:4px;padding:1px 5px;color:#888;margin-right:5px;font-style:normal;vertical-align:middle}
+.checks{display:flex;gap:0;flex-shrink:0}
+.ci{display:flex;flex-direction:column;align-items:center;gap:3px;width:70px}
+.ci span{font-size:9px;color:#999;white-space:nowrap}
+input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#1a7a4a}
+input[type=checkbox].rev{accent-color:#b87400}
+.col-hdr{display:flex;justify-content:flex-end;padding:8px 16px 0;gap:0}
+.ch{font-size:10px;color:#999;width:70px;text-align:center}
+.empty{text-align:center;padding:2rem;color:#999;font-size:13px}
+.saving{font-size:11px;color:#999;text-align:right;padding:4px 0;height:20px;transition:opacity .3s}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="title">Dashboard de Estudos — Delegado PCDF</div>
+    <div class="subtitle">Cebraspe · 2026 · Pontos do edital verticalizado</div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="global-bar"><div class="global-fill" id="global-bar" style="width:0%"></div></div>
+  <div class="filters" id="filters"></div>
+  <div class="saving" id="saving"></div>
+  <div id="list"></div>
+</div>
+
+<script>
+const C=['#378ADD','#1D9E75','#D85A30','#D4537E','#7F77DD','#BA7517','#639922','#E24B4A','#888780','#5DCAA5'];
+const T=(id,l,lei=false)=>({id,l,lei});
+
+const SUBJS=[
+{id:'adm',name:'Direito Administrativo',color:C[0],topics:[
+T('a1','Conceito e fontes do direito administrativo'),
+T('a1.1','Regime jurídico administrativo: princípios'),
+T('a1.2','Princípios da administração pública'),
+T('a2','Adm. pública: organização, descentralização, desconcentração, órgãos públicos'),
+T('a3','Administração indireta e entidades paralelas'),
+T('a4.1','Atos adm.: conceitos, requisitos, elementos, pressupostos e classificação'),
+T('a4.2','Fato e ato administrativo'),
+T('a4.3','Atos administrativos em espécie'),
+T('a4.4','O silêncio no direito administrativo'),
+T('a4.5','Cassação'),
+T('a4.6','Revogação e anulação'),
+T('a4.7','Processo administrativo'),
+T('a4.8','Fatos da administração pública e fatos administrativos'),
+T('a4.9','Formação do ato administrativo: elementos, procedimento administrativo'),
+T('a4.10','Validade, eficácia e autoexecutoriedade do ato administrativo'),
+T('a4.11','Atos simples, complexos e compostos'),
+T('a4.12','Atos unilaterais, bilaterais e multilaterais'),
+T('a4.13','Atos gerais e individuais'),
+T('a4.14','Atos vinculados e discricionários'),
+T('a4.15','Mérito do ato administrativo, discricionariedade'),
+T('a4.16','Ato administrativo inexistente'),
+T('a4.17','Teoria das nulidades no direito administrativo'),
+T('a4.18','Atos nulos e anuláveis'),
+T('a4.19','Vícios do ato administrativo'),
+T('a4.20','Teoria dos motivos determinantes'),
+T('a4.21','Revogação, anulação e convalidação do ato administrativo'),
+T('a5','Poderes da administração pública'),
+T('a5.1','Poder hierárquico e suas manifestações'),
+T('a5.2','Poder disciplinar'),
+T('a5.3','Poder de polícia'),
+T('a5.4','Liberdades públicas e poder de polícia'),
+T('a6','Serviços públicos: regulação, concessão, permissão e autorização'),
+T('a7','Intervenção do Estado sobre a propriedade privada'),
+T('a7.1','Intervenção do Estado no domínio econômico'),
+T('a8','Bens públicos'),
+T('a8.1','Regime jurídico dos bens públicos'),
+T('a8.2','Aquisição e alienação dos bens públicos'),
+T('a8.3','Formas de utilização dos bens públicos pelos particulares'),
+T('a9','Licitações: modalidades e procedimentos'),
+T('a10','Contratos administrativos'),
+T('a11','Convênios e consórcios administrativos'),
+T('a12','Controle e responsabilização da administração (adm., judicial, legislativo)'),
+T('a13.1','Agentes públicos: espécies e classificação'),
+T('a13.2','Cargo, emprego e função públicos'),
+T('a13.3','Formas de provimento e vacância dos cargos públicos'),
+T('a13.4','Responsabilidade civil, penal e administrativa dos agentes'),
+T('a14','Sistemas administrativos: sistema inglês, francês e o adotado no Brasil'),
+T('a15.1','Administração pública em sentido amplo e estrito'),
+T('a15.2','Administração pública em sentido objetivo e subjetivo'),
+T('a16.2','Supremacia do interesse público e indisponibilidade'),
+T('a16.3','Princípios expressos e implícitos da administração pública'),
+T('a16.4','Jurisprudência aplicada dos tribunais superiores'),
+T('a17','Agências reguladoras'),
+T('a19.1','Poder regulamentar'),
+T('a19.2','Dever de agir'),
+T('a19.3','Dever de eficiência'),
+T('a19.4','Dever de probidade'),
+T('a19.5','Dever de prestação de contas'),
+T('a19.6','Uso e abuso do poder'),
+T('aL1','Lei 14.133/2021 — Estatuto de Licitações',true),
+T('aL2','Lei nº 12.846/2013 — Lei Anticorrupção',true),
+T('aL3','Lei nº 15.047/2024 — Regime Disciplinar PCDF',true),
+T('aL4','LC-DF nº 840/2011 — Regime Jurídico dos Servidores do DF',true),
+T('aL5','Lei nº 8.429/1992 — Improbidade Administrativa',true),
+T('aL6','Lei nº 9.784/1999 — Processo Administrativo',true),
+]},
+{id:'con',name:'Direito Constitucional',color:C[1],topics:[
+T('c1','Direito constitucional: noções gerais, ciclos constitucionais'),
+T('c2','Classificações das constituições'),
+T('c3.1','Fundamentos do poder constituinte'),
+T('c3.2','Poder constituinte originário e derivado'),
+T('c3.3','Reforma e revisão constitucionais'),
+T('c3.4','Limitação do poder de revisão'),
+T('c3.5','Emendas à Constituição'),
+T('c3.6','Poder constituinte e revolução'),
+T('c4','Controle de constitucionalidade: conceito e sistemas'),
+T('c4.2','Inconstitucionalidade por ação e por omissão'),
+T('c4.3','Sistema brasileiro de controle de constitucionalidade'),
+T('c4.4','Arguição de descumprimento de preceitos fundamentais (ADPF)'),
+T('c4.5','Fenômeno jurídico da desconstitucionalização'),
+T('c5','Interpretação constitucional'),
+T('c6','Direitos e deveres fundamentais'),
+T('c6.1','Direitos e deveres individuais e coletivos'),
+T('c6.2','Direito à vida, liberdade, igualdade, segurança e propriedade'),
+T('c6.3','Direitos sociais, nacionalidade, cidadania e direitos políticos'),
+T('c6.4','Partidos políticos'),
+T('c6.5','Garantias constitucionais individuais'),
+T('c6.6','Garantias dos direitos coletivos, sociais e políticos'),
+T('c6.7','Remédios constitucionais'),
+T('c6.8','Direitos sociais e sua efetivação'),
+T('c6.9','Tratados internacionais de direitos humanos e posição no ordenamento'),
+T('c7.1','Organização político-administrativa'),
+T('c7.2','Estado federal brasileiro'),
+T('c7.3','União'),
+T('c7.4','Estados federados'),
+T('c7.5','Municípios'),
+T('c7.6','Distrito Federal'),
+T('c7.7','Territórios'),
+T('c8.1','Administração pública: disposições gerais'),
+T('c8.2','Servidores públicos'),
+T('c9.1','Mecanismos de freios e contrapesos'),
+T('c9.2','Comissões parlamentares de inquérito'),
+T('c9.3','Organização e competências dos poderes'),
+T('c10','Poder Legislativo: fundamentos, atribuições e garantias'),
+T('c10.1','Processo Legislativo: fundamentos, objetos, atos e procedimentos'),
+T('c11.1','Forma e sistema de governo'),
+T('c11.2','Chefia de Estado e chefia de governo'),
+T('c11.3','Atribuições e responsabilidades do Presidente da República'),
+T('c12','Poder Judiciário'),
+T('c12.1','Funções essenciais à justiça'),
+T('c13.1','Segurança pública'),
+T('c13.2','Organização da segurança pública'),
+T('c13.3','Atribuições constitucionais da Polícia Judiciária'),
+T('c14','Ordem social'),
+T('c15.1','Convenção de Mérida'),
+T('c15.2','Convenção de Palermo'),
+T('c15.3','Convenção de Viena'),
+T('c15.4','Pacto de São José da Costa Rica'),
+T('c15.5','Tratado de Roma'),
+T('c16','Conceito, objeto, elementos e classificações da constituição; neoconstitucionalismo'),
+T('c17','Noções sobre o Sistema Tributário Nacional'),
+T('c17.1','Limitações do poder de tributar'),
+T('c17.2','Impostos da União, dos estados e dos municípios'),
+T('c17.3','Repartição das receitas tributárias'),
+T('c18','Finanças públicas: normas gerais'),
+T('c19.1','Princípios gerais da atividade econômica'),
+T('c19.2','Política urbana, agrícola, fundiária e reforma agrária'),
+T('cL1','Constituição Federal de 1988',true),
+T('cL2','Lei nº 13.675/2018 — SUSP',true),
+T('cL3','Lei nº 12.830/2013 — Investigação criminal pelo delegado',true),
+T('cL4','Lei nº 14.735/2023 — Lei Orgânica Nacional das Polícias Civis',true),
+T('cL5','Lei nº 13.964/2019 — investigação e garantias',true),
+]},
+{id:'civ',name:'Direito Civil',color:C[2],topics:[
+T('ci1','Lei de Introdução às Normas do Direito Brasileiro'),
+T('ci2.1','Pessoa natural'),
+T('ci2.2','Personalidade e capacidade'),
+T('ci2.3','Direitos da personalidade'),
+T('ci2.4','Pessoa jurídica'),
+T('ci2.5','Domicílio'),
+T('ci3.1','Diferentes classes de bens'),
+T('ci3.2','Bens considerados em si mesmos'),
+T('ci3.3','Bens reciprocamente considerados'),
+T('ci4','Fato jurídico'),
+T('ci4.1','Negócio jurídico'),
+T('ci4.2','Defeitos do negócio jurídico'),
+T('ci4.3','Invalidade do negócio jurídico'),
+T('ci4.4','Atos jurídicos lícitos'),
+T('ci4.5','Atos ilícitos'),
+T('ci5','Prescrição e decadência'),
+T('ci6.1','Posse'),
+T('ci6.2','Classificação, aquisição, efeitos e perda da posse'),
+T('ci6.3','Direitos reais'),
+T('ci6.4','Propriedade'),
+T('ci6.6','Aquisição da propriedade imóvel'),
+T('ci6.7','Aquisição da propriedade móvel'),
+T('ci6.8','Perda da propriedade'),
+T('ci7','Responsabilidade civil'),
+T('ci7.1','Obrigação de indenizar'),
+T('ci7.2','Indenização'),
+T('ciL1','Decreto-lei nº 4.657/1942',true),
+T('ciL2','Decreto nº 9.830/2019',true),
+]},
+{id:'emp',name:'Direito Empresarial',color:C[3],topics:[
+T('e1','Direito empresarial: origem, evolução histórica, autonomia, fontes'),
+T('e1.2','Empresário: caracterização, inscrição, capacidade, teoria da empresa'),
+T('e2','Espécies de empresas'),
+T('e2.1','Responsabilidade dos sócios'),
+T('e2.2','Distribuição de lucros'),
+T('e2.3','Sócio oculto'),
+T('e2.4','Segredo comercial'),
+T('e3.1','Conceito de sociedade e personalização'),
+T('e3.2','Classificação das sociedades (simples, coletiva, comandita, cooperada, coligadas)'),
+T('e3.3','Liquidação, transformação, incorporação, fusão, cisão'),
+T('e3.4','Sociedade limitada e sociedade anônima'),
+T('e3.5','Estabelecimento empresarial'),
+T('e3.6','Recuperação judicial, extrajudicial e falência'),
+T('e3.7','Registro, nome, prepostos, escrituração, propriedade industrial'),
+T('eL1','Lei nº 11.101/2005 — Recuperação Judicial e Falência',true),
+T('eL2','Lei nº 13.874/2019 — Direitos de Liberdade Econômica',true),
+]},
+{id:'pen',name:'Direito Penal',color:C[4],topics:[
+T('p1','Princípios e garantias penais fundamentais'),
+T('p2','Direito penal e política criminal'),
+T('p3','Evolução epistemológica do direito penal'),
+T('p4','Escolas penais'),
+T('p5','Lei penal: características, fontes, interpretação, vigência e aplicação'),
+T('p5.2','Analogia'),
+T('p5.3','Aplicação da lei penal no tempo e no espaço'),
+T('p5.3.1','Lei penal excepcional, especial e temporária'),
+T('p5.3.2','Territorialidade e extraterritorialidade da lei penal'),
+T('p5.4','Irretroatividade da lei penal'),
+T('p5.5','Imunidades'),
+T('p5.6','Condições de punibilidade'),
+T('p5.7','Concurso aparente de normas'),
+T('p6.1','Crime e contravenção: conceito, objeto, sujeitos, conduta, tipicidade'),
+T('p6.2','Bem jurídico'),
+T('p6.3','Fato típico e seus elementos'),
+T('p6.4','Causas de exclusão da tipicidade'),
+T('p6.5','Teoria da ação'),
+T('p6.6','Conduta, resultado, relação de causalidade e teorias'),
+T('p6.7','Imputação objetiva'),
+T('p6.8','Consumação e tentativa'),
+T('p6.9','Desistência voluntária, arrependimento eficaz e posterior'),
+T('p6.10','Crime impossível'),
+T('p6.11','Agravação pelo resultado'),
+T('p6.12','Descriminantes putativas'),
+T('p6.13','Erro de tipo, erro determinado por terceiro e erro sobre a pessoa'),
+T('p6.14','Ilicitude'),
+T('p6.15','Causas de exclusão da ilicitude'),
+T('p6.16','Culpabilidade'),
+T('p6.17.1','Imputabilidade'),
+T('p6.17.2','Erro de proibição'),
+T('p6.17.3','Coação irresistível e obediência hierárquica'),
+T('p6.18.1','Autoria e participação'),
+T('p6.18.2','Elementares e circunstâncias'),
+T('p7.1.1','Penas privativas de liberdade e regime de cumprimento'),
+T('p7.1.2','Penas restritivas de direitos'),
+T('p7.1.3','Pena de multa'),
+T('p7.2','Cominação das penas'),
+T('p7.3','Aplicação da pena'),
+T('p7.4','Suspensão condicional da pena'),
+T('p7.5','Livramento condicional'),
+T('p7.6','Efeitos da condenação e da reabilitação'),
+T('p7.7','Medidas de segurança'),
+T('p7.8','Ação penal'),
+T('p7.9.2','Prescrição: conceito, teorias, prazos, causas suspensivas e interruptivas'),
+T('p8.1','Crimes contra a pessoa'),
+T('p8.2','Crimes contra o patrimônio'),
+T('p8.3','Crimes contra a propriedade imaterial'),
+T('p8.4','Crimes contra a organização do trabalho'),
+T('p8.5','Crimes contra o sentimento religioso e contra o respeito aos mortos'),
+T('p8.6','Crimes contra a dignidade sexual'),
+T('p8.7','Crimes contra a família'),
+T('p8.8','Crimes contra a incolumidade pública'),
+T('p8.9','Crimes contra a paz pública'),
+T('p8.10','Crimes contra a fé pública'),
+T('p8.11','Crimes contra a administração pública'),
+T('p8.12','Crimes contra o Estado democrático de direito'),
+T('p9','Disposições constitucionais aplicáveis ao direito penal'),
+T('p10','Entendimento dos tribunais superiores em direito penal'),
+T('pL1','Dec.-Lei nº 3.914/1941 — Introdução ao Código Penal',true),
+T('pL2','Art. 9º CPM + Contravenções penais (Dec.-Lei 3.688/1941)',true),
+T('pL3','Lei nº 1.521/1951 — Economia Popular',true),
+T('pL4','Lei nº 2.889/1956 — Genocídio',true),
+T('pL5','Crimes Eleitorais (Leis 4.737/1965, 6.091/1974 e 9.504/1997)',true),
+T('pL6','Lei nº 5.553/1968 — Documentos de identificação pessoal',true),
+T('pL7','Lei nº 6.766/1979 — Parcelamento do solo urbano',true),
+T('pL8','Lei nº 7.716/1989 — Lei de Preconceito',true),
+T('pL9','Lei nº 8.069/1990 — ECA',true),
+T('pL10','Lei nº 8.072/1990 — Crimes Hediondos',true),
+T('pL11','Leis 8.078/1990 e 8.137/1990 — Crimes contra relações de consumo',true),
+T('pL12','Leis 8.137/1990, 8.176/1991 — Crimes contra a ordem tributária',true),
+T('pL13','Lei nº 9.099/1995 — Juizados Especiais Criminais',true),
+T('pL14','Lei nº 9.296/1996 — Interceptações Telefônicas',true),
+T('pL15','Lei nº 9.455/1997 — Tortura',true),
+T('pL16','Lei nº 9.503/1997 — CTB (crimes de trânsito)',true),
+T('pL17','Lei nº 9.605/1998 — Crimes Ambientais',true),
+T('pL18','Lei nº 9.613/1998 — Lavagem de Dinheiro',true),
+T('pL19','Lei nº 9.807/1999 — Proteção a vítimas e testemunhas',true),
+T('pL20','Lei nº 10.741/2003 — Estatuto do Idoso',true),
+T('pL21','Lei nº 10.826/2003 — Estatuto do Desarmamento',true),
+T('pL22','Lei nº 11.101/2005 — Crimes falimentares',true),
+T('pL23','Lei nº 11.340/2006 — Lei Maria da Penha',true),
+T('pL24','Lei nº 11.343/2006 — Lei de Drogas',true),
+T('pL25','Lei nº 12.850/2013 — Organizações Criminosas',true),
+T('pL26','Lei nº 12.984/2014 — Discriminação HIV/AIDS',true),
+T('pL27','Lei nº 13.146/2015 — Inclusão da Pessoa com Deficiência',true),
+T('pL28','Lei nº 13.260/2016 — Terrorismo',true),
+T('pL29','Lei nº 13.869/2019 — Abuso de Autoridade',true),
+T('pL30','Lei nº 14.344/2022 — Violência doméstica contra criança e adolescente',true),
+T('pL31','Lei nº 14.597/2023 — Lei Geral do Esporte',true),
+]},
+{id:'tri',name:'Direito Tributário',color:C[5],topics:[
+T('t1','O Estado e o poder de tributar'),
+T('t2','Direito tributário: conceito e princípios'),
+T('t3','Tributo: conceito e espécies'),
+T('t4','Código Tributário Nacional'),
+T('t5','Normas gerais de direito tributário'),
+T('t6.1','Obrigação tributária: conceito e espécies'),
+T('t6.2','Fato gerador (hipótese de incidência)'),
+T('t6.3','Sujeitos ativo e passivo'),
+T('t6.4','Solidariedade'),
+T('t6.5','Capacidade tributária'),
+T('t6.6','Domicílio tributário'),
+T('t7.1','Crédito tributário: conceito e natureza'),
+T('t7.3','Lançamento'),
+T('t7.4','Revisão'),
+T('t7.5','Suspensão, extinção e exclusão do crédito tributário'),
+T('t7.6','Prescrição e decadência tributárias'),
+T('t7.7','Repetição do indébito'),
+T('t8','Responsabilidade tributária'),
+T('t8.1','Responsabilidade por dívida própria e de outrem'),
+T('t8.2','Solidariedade e sucessão'),
+T('t8.3','Responsabilidade pessoal e de terceiros'),
+T('t8.4','Responsabilidade supletiva'),
+T('t9.1','Sistema Tributário Nacional: princípios gerais'),
+T('t9.2','Limitações ao poder de tributar'),
+T('t10','Tributos da União, dos estados, do DF e dos municípios'),
+T('t11','Ilícito tributário e crimes contra a ordem tributária'),
+T('tL1','EC 132/2023 — Reforma Tributária do Consumo',true),
+T('tL2','Lei Complementar nº 105/2001',true),
+T('tL3','Lei Complementar nº 116/2003',true),
+T('tL4','Lei nº 8.137/90',true),
+]},
+{id:'med',name:'Medicina Legal',color:C[6],topics:[
+T('m1.1','Importância da prova pericial'),
+T('m1.2','Noções de corpo de delito'),
+T('m1.3','Cadeia de custódia'),
+T('m1.4','Atuação dos assistentes técnicos'),
+T('m1.5','Documentos médico-legais: atestados, prontuários, relatórios, pareceres'),
+T('m1.6','Laudos periciais: estrutura, quesitos, modelos'),
+T('m1.7','Crime de Falsa Perícia'),
+T('m1.8','Interface da medicina-legal com as ciências forenses e criminalística'),
+T('m2.1.1','Lesão corporal: conceito e interpretação do art. 129 CP'),
+T('m2.1.3','Classificação, quesitos, quantificação de dano e nexo de causalidade'),
+T('m2.1.6','Perícia em vítimas de tortura; Protocolo de Istambul'),
+T('m2.1.8','Síndrome da criança espancada'),
+T('m2.2.2','Lesões e morte por ação contundente'),
+T('m2.2.3','Traumatismos cranioencefálicos'),
+T('m2.2.4','Lesões e morte por armas brancas'),
+T('m2.2.5','Lesões e morte por instrumentos perfurocontundentes'),
+T('m2.2.6','Lesões e morte por projéteis de alta energia'),
+T('m2.3','Energias físicas não mecânicas: baropatias, ação térmica, elétrica'),
+T('m3.1','Asfixiologia: conceito e classificação das asfixias'),
+T('m3.2','Asfixia por sufocação'),
+T('m3.3','Asfixia por constrição cervical'),
+T('m3.4','Asfixia por modificações no meio-ambiente'),
+T('m4.1','Tanatologia Forense: conceito de morte'),
+T('m4.2','Estudo médico-legal dos transplantes'),
+T('m4.3','Destinação do cadáver e atestado de óbito'),
+T('m4.4','Inumação, exumação, cremação e embalsamamento'),
+T('m4.5','Causas jurídicas da morte: homicídio, suicídio, acidente'),
+T('m4.6','Morte súbita e morte suspeita'),
+T('m4.7','Estimativa do tempo de morte: cronotanatognose, entomologia forense'),
+T('m4.8','Lesões intra vitam e post mortem'),
+T('m4.9','Necropsia médico-legal: indicações, técnicas, Protocolo de Minnesota'),
+T('m5','Sexologia Forense'),
+T('m5.4','Perícia nos crimes contra a liberdade sexual'),
+T('m5.5','Estudo médico-legal do aborto'),
+T('m5.6','Estudo médico-legal do infanticídio'),
+T('m5.7','Perícia nos crimes de pedofilia'),
+T('m6','Toxicologia Forense: conceitos fundamentais'),
+T('m6.2','Embriaguez etílica ou por outras drogas'),
+T('m6.3','Dependência do álcool ou de outras drogas'),
+T('m6.4','Lesões causadas por substâncias cáusticas e venenos'),
+T('m8.1','Psicopatologia Forense: conceitos fundamentais'),
+T('m8.2','Imputabilidade e responsabilidade penal'),
+T('m8.3','Capacidade civil'),
+T('m8.4','Dependências químicas'),
+]},
+{id:'proc',name:'Dir. Processual Penal',color:C[7],topics:[
+T('r1','Princípios, conceito, finalidade, características do DPP'),
+T('r1.2','Fontes do direito processual penal'),
+T('r1.3','Lei processual: eficácia, interpretação, analogia, imunidades'),
+T('r1.4','Sistemas de processo penal'),
+T('r2','Inquérito policial: histórico, natureza, conceito, finalidade'),
+T('r2.1','Notitia criminis, delatio criminis, indiciamento, garantias do investigado'),
+T('r3','Ação penal: conceito, características, espécies e condições'),
+T('r4','Competência: critérios de determinação e modificação'),
+T('r4.2','Incompetência'),
+T('r4.3','Conexão e continência'),
+T('r5','Questões e processos incidentes'),
+T('r6.1','Provas: conceito, objeto, classificação e sistemas de avaliação'),
+T('r6.2','Princípios gerais da prova, procedimento probatório'),
+T('r6.3','Valoração'),
+T('r6.4','Ônus da prova'),
+T('r6.5','Provas ilícitas'),
+T('r6.6','Meios de prova: perícias, interrogatório, confissão, testemunhas, reconhecimento, acareação, documentos, indícios'),
+T('r6.7','Busca e apreensão: pessoal, domiciliar, requisitos, restrições, horários'),
+T('r7','Sujeitos do processo: juiz, MP, acusado, assistente, peritos, impedimentos'),
+T('r8','Juizados especiais criminais: TCO, atos processuais'),
+T('r9.2','Prisão em flagrante'),
+T('r9.3','Prisão temporária'),
+T('r9.4','Prisão preventiva'),
+T('r9.5','Princípio da necessidade, prisão especial, liberdade provisória'),
+T('r9.6','Fiança'),
+T('r10','Sentença criminal'),
+T('r11','Citação, intimação, interdição de direito'),
+T('r12','Processos de crimes de responsabilidade de funcionários públicos'),
+T('r13','Coisa julgada, habeas corpus, mandado de segurança em matéria criminal'),
+T('r15','Processo penal constitucional'),
+T('r18','Processo, procedimento e relação jurídica processual'),
+T('r20','Ação civil ex delicto'),
+T('r22','Medidas cautelares e liberdade provisória'),
+T('r24','Nulidades'),
+T('r25','Recursos em geral'),
+T('r26','Jurisprudência dos tribunais superiores em DPP'),
+T('rL1','Lei nº 7.960/1989 — Prisão Temporária',true),
+T('rL2','Lei nº 8.072/1990 — Crimes Hediondos (aspectos processuais)',true),
+T('rL3','Lei nº 9.099/1995 — Juizados Especiais Criminais (aspectos processuais)',true),
+T('rL4','Lei nº 9.296/1996 — Interceptação Telefônica, Telemática e Ambiental',true),
+T('rL5','Lei nº 9.613/1998 — Lavagem de Dinheiro (aspectos processuais)',true),
+T('rL6','Lei nº 9.807/1999 — Proteção a vítimas e testemunhas ameaçadas',true),
+T('rL7','Lei nº 11.340/2006 — Lei Maria da Penha (aspectos processuais)',true),
+T('rL8','Lei nº 11.343/2006 — Lei de Drogas (aspectos processuais)',true),
+T('rL9','Lei nº 12.037/2009 — Identificação Criminal',true),
+T('rL10','Lei nº 12.850/2013 — Organização Criminosa',true),
+T('rL11','Lei nº 13.431/2017 — Sistema de Garantia de Direitos da Criança Vítima de Violência',true),
+T('rL12','Lei nº 13.869/2019 — Abuso de Autoridade (aspectos processuais)',true),
+T('rL13','Lei nº 13.964/2019 — Pacote Anticrime (aspectos processuais)',true),
+T('rL14','Lei nº 14.344/2022 — Lei Henry Borel (aspectos processuais)',true),
+]},
+{id:'amb',name:'Direito Ambiental',color:C[8],topics:[
+T('b1','Princípios do direito ambiental'),
+T('b2','Meio ambiente na Constituição Federal'),
+T('b3','Repartição de competências em matéria ambiental'),
+T('b4','Normas de cooperação'),
+T('b5','Poder de polícia e Direito Ambiental'),
+T('b6','Licenciamento ambiental'),
+T('b7','Estudo de impacto ambiental'),
+T('b8','Compensação ambiental'),
+T('b9','Biossegurança'),
+T('b10','Infrações ambientais'),
+T('b11','Responsabilidade ambiental: conceito de dano e reparação'),
+T('b12','SISNAMA e SNUC'),
+T('bL1','CF/1988 — Art. 225',true),
+T('bL2','Lei nº 9.605/1998 — Crimes e infrações administrativas ambientais',true),
+T('bL3','Decreto nº 6.514/2008 — Procedimento adm. para apuração de infrações ambientais',true),
+]},
+{id:'df',name:'Conhecimentos do DF e Primeiros Socorros',color:C[9],topics:[
+T('d1','Tópicos atuais sobre o DF: realidade étnica, social, histórica, geográfica, cultural, política e econômica'),
+T('d1.1','Região integrada de desenvolvimento do DF e entorno (RIDE) — LC 94/1998 e Decreto 7.469/2011'),
+T('d2','Plano Distrital de Política para Mulheres (PDPM)'),
+T('d3','Noções de primeiros socorros: cuidados iniciais com a vítima'),
+T('d3.1','Identificação de situações de emergência e acionamento do socorro'),
+T('d3.2','Engasgo, sangramentos, fraturas, queimaduras, desmaio, convulsões e intoxicações'),
+]},
+];
+
+let state={}, filter='all', expanded=new Set();
+
+function load(){
+  try{const s=localStorage.getItem('pcdf-dash-v2');if(s)state=JSON.parse(s);}catch(e){state={};}
+}
+function save(){
+  clearTimeout(window._sv);
+  window._sv=setTimeout(()=>{
+    try{localStorage.setItem('pcdf-dash-v2',JSON.stringify(state));showSaving();}catch(e){}
+  },400);
+}
+function showSaving(){
+  const el=document.getElementById('saving');
+  el.textContent='Progresso salvo';
+  el.style.opacity='1';
+  clearTimeout(window._st);
+  window._st=setTimeout(()=>{el.style.opacity='0';},1800);
+}
+
+function gs(id){return state[id]||{e:false,r:false};}
+
+function totals(){
+  let tot=0,est=0,rev=0;
+  SUBJS.forEach(s=>s.topics.forEach(t=>{tot++;const q=gs(t.id);if(q.e)est++;if(q.r)rev++;}));
+  return{tot,est,rev};
+}
+function subjProg(s){
+  let tot=s.topics.length,est=0,rev=0;
+  s.topics.forEach(t=>{const q=gs(t.id);if(q.e)est++;if(q.r)rev++;});
+  return{tot,est,rev};
+}
+function filterTopics(topics){
+  if(filter==='all')return topics;
+  if(filter==='e')return topics.filter(t=>gs(t.id).e);
+  if(filter==='r')return topics.filter(t=>gs(t.id).r);
+  if(filter==='p')return topics.filter(t=>{const q=gs(t.id);return!q.e&&!q.r;});
+  return topics;
+}
+
+function renderStats(){
+  const{tot,est,rev}=totals();
+  const pend=tot-est;
+  const pct=tot?Math.round(est/tot*100):0;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="sn">${tot}</div><div class="sl">Tópicos totais</div></div>
+    <div class="stat"><div class="sn g">${est}</div><div class="sl">Estudados (${pct}%)</div></div>
+    <div class="stat"><div class="sn a">${rev}</div><div class="sl">A revisar</div></div>
+    <div class="stat"><div class="sn p">${pend}</div><div class="sl">Pendentes</div></div>
+  `;
+  document.getElementById('global-bar').style.width=pct+'%';
+}
+
+function renderFilters(){
+  const fs=[{k:'all',l:'Todos'},{k:'p',l:'Pendentes'},{k:'e',l:'Estudados'},{k:'r',l:'A revisar'}];
+  document.getElementById('filters').innerHTML=fs.map(f=>
+    `<button class="fb${filter===f.k?' on':''}" onclick="setFilter('${f.k}')">${f.l}</button>`
+  ).join('');
+}
+
+function renderList(){
+  const el=document.getElementById('list');
+  let html='';
+  SUBJS.forEach(s=>{
+    const vis=filterTopics(s.topics);
+    if(!vis.length&&filter!=='all')return;
+    const p=subjProg(s);
+    const pct=Math.round(p.est/p.tot*100);
+    const open=expanded.has(s.id);
+    html+=`<div class="card">
+      <div class="sh" onclick="toggle('${s.id}')">
+        <div class="dot" style="background:${s.color}"></div>
+        <div class="sname">${s.name}</div>
+        <div class="spct">${p.est}/${p.tot} · ${pct}%</div>
+        <div class="chev${open?' open':''}">&#9654;</div>
+      </div>
+      <div class="pb"><div class="pf" style="width:${pct}%;background:${s.color}"></div></div>
+      <div class="topics-wrap${open?' open':''}">
+        <div class="col-hdr">
+          <span class="ch">Estudado</span>
+          <span class="ch">Revisar</span>
+        </div>
+        ${vis.map(topic=>{
+          const q=gs(topic.id);
+          return`<div class="tr${q.e?' done':''}">
+            <div class="tl${topic.lei?' lei':''}">${topic.lei?'<span class="lei-badge">LEG</span>':''}${topic.l}</div>
+            <div class="checks">
+              <div class="ci"><input type="checkbox"${q.e?' checked':''} onchange="chk('${topic.id}','e',this.checked)"></div>
+              <div class="ci"><input type="checkbox" class="rev"${q.r?' checked':''} onchange="chk('${topic.id}','r',this.checked)"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+  if(!html)html='<div class="empty">Nenhum tópico encontrado para este filtro.</div>';
+  el.innerHTML=html;
+}
+
+function render(){renderStats();renderFilters();renderList();}
+
+window.toggle=id=>{expanded.has(id)?expanded.delete(id):expanded.add(id);renderList();};
+window.setFilter=f=>{filter=f;render();};
+window.chk=(id,field,val)=>{
+  if(!state[id])state[id]={e:false,r:false};
+  state[id][field]=val;
+  save();
+  render();
+};
+
+load();
+render();
+</script>
+</body>
+</html>
